@@ -1,0 +1,1 @@
+Python code to pull information from the Premier League Fantasy Football website, and create a decent team (optimised for pts per £) from last years performance
