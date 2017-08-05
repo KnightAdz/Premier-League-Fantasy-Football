@@ -23,7 +23,8 @@ START_PAGE = 1
 
 # Player positions and counts
 positions = ['GKP','DEF','MID','FWD']
-max_pos = [2,5,5,3]
+max_pos = [2,5,5,3] # Number of players needed in each position to form a complete squad
+cheap_pos = [1,2,0,0] # Number of desired cheapest players in each position
 legit_formations = [    [1,5,4,1],
                         [1,4,4,2],
                         [1,3,5,2],
@@ -130,15 +131,30 @@ def optimal_team(df, squad_size=15, budget=100):
     for pos in positions:
         # Create a slice of players in that position
         pos_df = df[df['Position'] == pos]
+        # And a dataframe of the cheapest players incase we need one
+        cheap_df = pos_df[pos_df['Cost'] == pos_df['Cost'].min()]
+        cp = 0
         for pos2 in range(0,max_pos[mp]):
             # And narrow it to what we can afford
             funds = budget - spent
             pos_df = pos_df[pos_df['Cost'] <= funds]
-            new_players = pos_df.head(1)
-            squad = squad.append(new_players, ignore_index=True)
-            spent += new_players["Cost"].sum()
-            # Delete this player so we don't select a player we already have
-            pos_df.drop(pos_df.index[:1], inplace=True)
+            cheap_df = cheap_df[cheap_df['Cost'] <= funds]
+            # If we want a cheap player for this position, get them first as we can't overspend
+            if cheap_pos[mp] > cp:
+                cp += 1
+                # Now we can grab the top player, which will be the one with the best points-cost ratio
+                new_players = cheap_df.head(1)
+                squad = squad.append(new_players, ignore_index=True)
+                spent += new_players["Cost"].sum()
+                # Delete this player so we don't select a player we already have
+                cheap_df.drop(cheap_df.index[:1], inplace=True)
+            else:
+                # Now we can grab the top player, which will be the one with the best points-cost ratio
+                new_players = pos_df.head(1)
+                squad = squad.append(new_players, ignore_index=True)
+                spent += new_players["Cost"].sum()
+                # Delete this player so we don't select a player we already have
+                pos_df.drop(pos_df.index[:1], inplace=True)
 
         mp += 1
 
