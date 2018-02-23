@@ -24,7 +24,7 @@ START_PAGE = 1
 # Player positions and counts
 positions = ['GKP','DEF','MID','FWD']
 max_pos = [2,5,5,3] # Number of players needed in each position to form a complete squad
-cheap_pos = [1,2,0,0] # Number of desired cheapest players in each position
+cheap_pos = [0,0,0,0] # Number of desired cheapest players in each position
 legit_formations = [    [1,5,4,1],
                         [1,4,4,2],
                         [1,3,5,2],
@@ -112,6 +112,25 @@ def TooManyPlayerTeams(squad):
 
     return error_teams
 
+
+# Validation functions
+def TooManyPlayerTeams(squad):
+    error_teams = []
+    # Take each legitimate formation
+    for p in squad:
+        count = 1
+        t = p["Team"]
+        if t not in error_teams:
+            for p2 in squad:
+                if p2["Team"] == t:
+                    count += 1
+            if count > 3:
+                error_teams.append(t)
+
+    return error_teams
+
+
+# Build an optimal team
 def optimal_team(df, squad_size=15, budget=100):
     # Define variables
     max_per_team = 3
