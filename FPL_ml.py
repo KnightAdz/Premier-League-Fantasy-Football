@@ -2,21 +2,43 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import OneHotEncoder
 
-def data_prep(current_gameweek, hist_df):
+
+def data_prep(current_gameweek, hist_df, team_df, next_game_df=0):
     # Function to create input features and target labels for a given gameweek
 
     # Features should all come from before the gameweek we're predicting
     X = hist_df[hist_df['round'] == current_gameweek]
 
 
-    # The target variable is the points scored in the gameweek
-    next_week_points = hist_df[hist_df['round'] == current_gameweek + 1]
-    next_week_points = next_week_points.loc[:, ('total_points', 'player_id')]
+    # The target variable is the points scored in the gameweek, and we want to pull more features so lets grab that gameweek
+    next_week_df = hist_df[hist_df['round'] == current_gameweek + 1]
+
+    # Target variable
+    next_week_points = next_week_df.loc[:, ('total_points', 'player_id')]
     X = X.merge(next_week_points, left_on='player_id', right_on='player_id', how='left', suffixes=['', '_next_week'])
 
     # Replace missing points values with zero
     X['total_points'].fillna(0)
     X['total_points_next_week'].fillna(0)
+
+    # Include the team to be played next gameweek, and their scores
+    # For real predictions we will need to use next_game_df, but for history we can cheat
+    if next_game_df == 0:
+        # Get the opponent team id for each player in the next gameweek
+        next_opponent = next_week_df.loc[:, ('player_id','opponent_team')]
+        # Many of the team_df columns hold garbage, only take the useful ones
+        team_cols = ['id', 'short_name', 'strength', 'strength_attack_away',
+                     'strength_attack_home', 'strength_defence_away',
+                     'strength_defence_home', 'strength_overall_away','strength_overall_home']
+        # Join on the team info
+        next_opponent = next_opponent.merge(team_df[team_cols], left_on='opponent_team', right_on='id', how='left')
+    else:
+        # Use the next gameweek info
+        next_opponent = 0
+
+    # Join the team info back into the main dataframe
+    X = X.merge(next_opponent, left_on='player_id', right_on='player_id', how='left', suffixes=['', '_next_week'])
+
 
     # Should drop player id and some others as it doesn't mean anything
     # Also, create features from previous weeks too
