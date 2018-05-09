@@ -9,8 +9,8 @@ A competition in which participants select imaginary teams from among the player
 Data is scraped from the Premier League Fantasy Football website https://fantasy.premierleague.com 
 
 ## File descriptions
-**FPL_data.py:** Utility functions for scraping the data, and loading into pandas DataFrames
-**FPL_ml.py** Functions to prepare the data for use by machine learning algorithms
-**Data Exploration.ipynb** Notebook used to understand the variables and their distributions
-**Gameweek prediction.ipynb** Notebook for experimenting with different models
+- **FPL_data.py:** Utility functions for scraping the data, and loading into pandas DataFrames
+- **FPL_ml.py** Functions to prepare the data for use by machine learning algorithms
+- **Data Exploration.ipynb** Notebook used to understand the variables and their distributions
+- **Gameweek prediction.ipynb** Notebook for experimenting with different models
 
