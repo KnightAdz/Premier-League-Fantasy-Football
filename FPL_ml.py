@@ -26,13 +26,9 @@ def data_prep(current_gameweek, hist_df, team_df, plyr_df, next_game_df=0):
     # Get information from the player dataset
     # element_type is the position e.g. goalkeeper, defender, midfielder, attacker
     plyr_info = plyr_df[['first_name', 'id', 'news', 'news_added', 'second_name', 'squad_number', 'status', 'team', 'element_type']]
-    # Don't include unavailable players (those out on loan etc.)
-    X = X.merge(plyr_info, left_on='player_id', right_on='id', how='left')
-    # Remove unfit players
-    X = X[X['status'] != 'u']
-
 
     ### TEAMS INFO
+    X = X.merge(plyr_info, left_on='player_id', right_on='id', how='left')
 
     # Many of the team_df columns hold garbage, only take the useful ones
     team_cols = ['id', 'short_name', 'strength', 'strength_attack_away',
@@ -64,17 +60,51 @@ def data_prep(current_gameweek, hist_df, team_df, plyr_df, next_game_df=0):
 
     ### FEATURE ENGINEERING
 
-    # Average of past scores
 
+    # Average of past scores
+    points = hist_df[hist_df['round'] <= current_gameweek][['player_id', 'round', 'total_points']].set_index(['player_id', 'round'])
+    points = points.unstack()
+    points.columns = points.columns.get_level_values(1).fillna(0)
+    points.columns = ['wk' + str(x) for x in points.columns]
+
+    X['avg_last_3wks'] = get_past_wks(points, 3).mean(axis=1).values
+    X['avg_last_5wks'] = get_past_wks(points, 5).mean(axis=1).values
+    X['avg_last_10wks'] = get_past_wks(points, 10).mean(axis=1).values
+    X['avg_last_allwks'] = get_past_wks(points, 40).mean(axis=1).values
+
+    X['max_last_3wks'] = get_past_wks(points, 3).max(axis=1).values
+    X['max_last_5wks'] = get_past_wks(points, 5).max(axis=1).values
+    X['max_last_10wks'] = get_past_wks(points, 10).max(axis=1).values
+    X['max_allwks'] = get_past_wks(points, 40).max(axis=1).values
+
+    X['min_last_3wks'] = get_past_wks(points, 3).min(axis=1).values
+    X['min_last_5wks'] = get_past_wks(points, 5).min(axis=1).values
+    X['min_last_10wks'] = get_past_wks(points, 10).min(axis=1).values
+    X['min_allwks'] = get_past_wks(points, 40).min(axis=1).values
 
     # Should drop player id and some others as it doesn't mean anything
     # Also, create features from previous weeks too
 
 
+    # Don't include unavailable players (those out on loan etc.)
+
+    # Remove unfit players
+    X = X[X['status'] != 'u']
+
     # For now, drop non-numeric columns
     X = X._get_numeric_data()
 
     return X
+
+
+def get_past_wks(df, wks_back):
+    # Given a dataframe with columns named 'wk1','wk2' etc, return the last number of
+    n_cols = df.columns.shape[0]
+    start = n_cols-wks_back
+    if start < 1:
+        start = 1
+    colnames = ['wk'+str(i) for i in range(start, n_cols+1)]
+    return df[colnames]
 
 
 def merge_preds_and_players(X, y, plyr_df):
