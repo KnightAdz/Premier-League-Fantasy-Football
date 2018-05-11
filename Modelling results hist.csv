@@ -4,3 +4,4 @@ Model,Description,Prediction week,MSE,RMSE
 2,Decision tree trained on weeks 1-3,5,11.9568733154,3.4578712115
 3,Random forest trained on weeks 1-3,5,12.6307277628,3.5539735175
 4,Included opponent team next week stats,5,7.152972167,2.6745040974
+5,Included player specific points history features,10,6.08,2.4657656012

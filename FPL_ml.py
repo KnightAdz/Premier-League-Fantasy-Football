@@ -62,25 +62,31 @@ def data_prep(current_gameweek, hist_df, team_df, plyr_df, next_game_df=0):
 
 
     # Average of past scores
-    points = hist_df[hist_df['round'] <= current_gameweek][['player_id', 'round', 'total_points']].set_index(['player_id', 'round'])
-    points = points.unstack()
-    points.columns = points.columns.get_level_values(1).fillna(0)
-    points.columns = ['wk' + str(x) for x in points.columns]
+#    points = hist_df[hist_df['round'] <= current_gameweek][['player_id', 'round', 'total_points']].set_index(['player_id', 'round'])
+#    points = points.unstack()
+#    points.columns = points.columns.get_level_values(1).fillna(0)
+#    points.columns = ['wk' + str(x) for x in points.columns]
 
-    X['avg_last_3wks'] = get_past_wks(points, 3).mean(axis=1).values
-    X['avg_last_5wks'] = get_past_wks(points, 5).mean(axis=1).values
-    X['avg_last_10wks'] = get_past_wks(points, 10).mean(axis=1).values
-    X['avg_last_allwks'] = get_past_wks(points, 40).mean(axis=1).values
+#    X['avg_pts_last_3wks'] = get_past_wks(points, 3).mean(axis=1).values
+#    X['avg_pts_last_5wks'] = get_past_wks(points, 5).mean(axis=1).values
+#    X['avg_pts_last_10wks'] = get_past_wks(points, 10).mean(axis=1).values
+#    X['avg_pts_last_allwks'] = get_past_wks(points, 40).mean(axis=1).values
 
-    X['max_last_3wks'] = get_past_wks(points, 3).max(axis=1).values
-    X['max_last_5wks'] = get_past_wks(points, 5).max(axis=1).values
-    X['max_last_10wks'] = get_past_wks(points, 10).max(axis=1).values
-    X['max_allwks'] = get_past_wks(points, 40).max(axis=1).values
+#    X['max_pts_last_3wks'] = get_past_wks(points, 3).max(axis=1).values
+#    X['max_pts_last_5wks'] = get_past_wks(points, 5).max(axis=1).values
+#    X['max_pts_last_10wks'] = get_past_wks(points, 10).max(axis=1).values
+#    X['max_pts_allwks'] = get_past_wks(points, 40).max(axis=1).values
 
-    X['min_last_3wks'] = get_past_wks(points, 3).min(axis=1).values
-    X['min_last_5wks'] = get_past_wks(points, 5).min(axis=1).values
-    X['min_last_10wks'] = get_past_wks(points, 10).min(axis=1).values
-    X['min_allwks'] = get_past_wks(points, 40).min(axis=1).values
+ #   X['min_pts_last_3wks'] = get_past_wks(points, 3).min(axis=1).values
+ #   X['min_pts_last_5wks'] = get_past_wks(points, 5).min(axis=1).values
+ #   X['min_pts_last_10wks'] = get_past_wks(points, 10).min(axis=1).values
+  #  X['min_pts_allwks'] = get_past_wks(points, 40).min(axis=1).values
+
+    X = historical_features(X, hist_df, current_gameweek, 'total_points')
+    X = historical_features(X, hist_df, current_gameweek, 'selected')
+    X = historical_features(X, hist_df, current_gameweek, 'minutes')
+    X = historical_features(X, hist_df, current_gameweek, 'completed_passes')
+    X = historical_features(X, hist_df, current_gameweek, 'transfers_in')
 
     # Should drop player id and some others as it doesn't mean anything
     # Also, create features from previous weeks too
@@ -95,6 +101,19 @@ def data_prep(current_gameweek, hist_df, team_df, plyr_df, next_game_df=0):
     X = X._get_numeric_data()
 
     return X
+
+def historical_features(X_df,h_df,current_gameweek,target_col, wks_back=[3,5,10,40]):
+    # Average of past selection scores
+    selects = h_df[h_df['round'] <= current_gameweek][['player_id', 'round', target_col]].set_index(['player_id', 'round'])
+    selects = selects.unstack()
+    selects.columns = selects.columns.get_level_values(1).fillna(0)
+    selects.columns = ['wk' + str(x) for x in selects.columns]
+
+    for i in wks_back:
+        X_df['avg_'+target_col+'_last_'+str(i)+'wks'] = get_past_wks(selects, i).mean(axis=1).values
+
+    return X_df
+
 
 
 def get_past_wks(df, wks_back):
@@ -122,7 +141,7 @@ def merge_preds_and_players(X, y, plyr_df):
 def plot_feature_importance(X, model, threshold=0.01):
     # Plot a bar chart of the feature importances
     feature_importances = pd.DataFrame(data={'Feature':X.columns,'Importance':model.feature_importances_})
-    feature_importances = feature_importances.sort_values(by='Importance')
+    feature_importances = feature_importances.sort_values(by='Importance', ascending=False)
     y = range(feature_importances[feature_importances['Importance']>threshold].shape[0])
     plt.barh(y,feature_importances[feature_importances['Importance']>threshold].Importance)
     plt.yticks(y,feature_importances['Feature'])
